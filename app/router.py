@@ -31,7 +31,7 @@ class MusicRecord(BaseModel):
     # Check if the vectors list has 148 items (can be null)
     @validator("vectors")
     def check_vector_size(cls, v):
-        assert len(v) == 148
+        assert len(v) == 148, "Vect feature must contain 148 data points"
         return v
 
 
