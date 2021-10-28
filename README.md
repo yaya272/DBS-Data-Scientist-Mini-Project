@@ -14,8 +14,9 @@
 │   ├── database.py       # where all the db operation are done 
 │   └── predicitions.db   # SQLite DB File          
 ├── models
-│   ├── fasttext.bin      
-│   └── fullpipeline.bin  
+│   ├── fina_model.bin  
+│   ├── label_encoded.bin      
+│   └── preprocessing_pipeline.bin  
 ├── notebooks
 │   ├── EDA.ipynb      
 │   └── Preprocessing & Modeling.ipynb 
