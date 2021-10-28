@@ -1,12 +1,13 @@
 from typing import List, Union
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, validator
+from app import database as db
 
 ####################
 # Define Namespace #
 ####################
-router = APIRouter(
+g_router = APIRouter(
     prefix="/genre",
     tags=["Music Genre"]
 )
@@ -46,10 +47,10 @@ class GenrePredictResponse(BaseModel):
 #############
 # Endpoints #
 #############
-@router.post("/predict",
-             status_code=status.HTTP_200_OK,
-             response_model=List[GenrePredictResponse],
-             summary="Make prediction")
+@g_router.post("/predict",
+               status_code=status.HTTP_200_OK,
+               response_model=List[GenrePredictResponse],
+               summary="Make prediction")
 def predict(request_data: GenrePredictRequest):
     print(request_data)
 
@@ -59,19 +60,26 @@ def predict(request_data: GenrePredictRequest):
     pass
 
 
-@router.get("/",
-            status_code=status.HTTP_200_OK,
-            response_model=List[str],
-            summary="Retrieve the list of existing genre.")
+@g_router.get("/",
+              status_code=status.HTTP_200_OK,
+              response_model=List[str],
+              summary="Retrieve the list of existing genre.")
 def get_genre():
-    # TODO Return unique list of the genre
-    pass
+    genres = db.get_genre()
+    genres = [genre[0] for genre in genres]
+    if not genres:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No Genre found in the database")
+    return genres
 
 
-@router.get("/{genre}/",
-            status_code=status.HTTP_200_OK,
-            response_model=List[str],
-            summary="Get all music title from a specific genre")
+@g_router.get("/{genre}/",
+              status_code=status.HTTP_200_OK,
+              response_model=List[str],
+              summary="Get all music title from a specific genre")
 def get_title(genre: str):
-    # TODO return all music title with the genre
-    return {genre: []}
+    titles = db.get_title_by_genre(genre)
+    titles = [title[0] for title in titles]
+    if not titles:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Genre: {genre} doest not exist")
+
+    return titles
