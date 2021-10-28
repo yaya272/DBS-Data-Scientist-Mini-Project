@@ -36,7 +36,8 @@ def create_bd() -> None:
 def get_title_by_genre(genre: str):
     con = sqlite3.connect('./prediction.db')
     cur = con.cursor()
-    cur.execute("SELECT title.title FROM title INNER JOIN genre ON genre.id=title.genre_id WHERE lower(genre.genre)=='%s'" % genre.lower())
+    cur.execute(
+        "SELECT title.title FROM title INNER JOIN genre ON genre.id=title.genre_id WHERE lower(genre.genre)=='%s'" % genre.lower())
     result = cur.fetchall()
     con.close()
     return result
@@ -49,3 +50,24 @@ def get_genre():
     result = cur.fetchall()
     con.close()
     return result
+
+
+def get_genre_by_names(names):
+    con = sqlite3.connect('./prediction.db')
+    cur = con.cursor()
+    sql = "SELECT id,genre from genre where lower(genre) in ({seq})".format(seq=','.join(['?']*len(names)))
+    cur.execute(sql, names)
+    results = cur.fetchall()
+    con.close()
+    return {genre.lower(): genre_id for genre_id, genre in results}
+
+
+def insert_title(data):
+    con = sqlite3.connect('./prediction.db')
+    cur = con.cursor()
+
+    # genre_id =
+    cur.executemany("INSERT INTO title (title, genre_id) VALUES (?, ?)", data)
+
+    con.commit()
+    con.close()

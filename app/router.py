@@ -1,8 +1,18 @@
 from typing import List, Union
 
+import pandas as pd
 from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, validator
 from app import database as db
+
+import joblib
+
+#########################
+# Load Model & Pipeline #
+#########################
+label_encoder = joblib.load("../models/label_encoder.bin")
+preprocessing_pipeline = joblib.load("../models/preprocessing_pipeline.bin")
+model = joblib.load("../models/final_model.bin")
 
 ####################
 # Define Namespace #
@@ -17,14 +27,14 @@ g_router = APIRouter(
 # Req/Res Models #
 ##################
 class MusicRecord(BaseModel):
-    track_ID: Union[int, None]
+    trackID: Union[int, None]
     title: Union[str, None]
     tags: Union[str, None]
     loudness: Union[float, None]
     tempo: Union[float, None]
     time_signature: Union[int, None]
     key: Union[int, None]
-    mode: Union[bool, None]
+    mode: Union[int, None]
     duration: Union[float, None]
     vectors: List[Union[float, None]]
 
@@ -52,12 +62,33 @@ class GenrePredictResponse(BaseModel):
                response_model=List[GenrePredictResponse],
                summary="Make prediction")
 def predict(request_data: GenrePredictRequest):
-    print(request_data)
+    records = []
+    for record in request_data.data:
+        records.append(record.dict())
 
-    # TODO Make predictions
-    # TODO Store predictions in DB
-    # TODO Return predciton
-    pass
+    # Reshape vectors from 1 list to 148 features
+    records = pd.DataFrame(records)
+    vectors = records["vectors"]
+    records.drop(columns=["vectors"], inplace=True)
+    vectors = pd.DataFrame(vectors.tolist())
+    names = {i: f"vect_{i + 1}" for i in range(148)}
+    vectors.rename(names, axis=1, inplace=True)
+    records = pd.concat([records, vectors], axis=1)
+
+    # Preprocessing & Prediction
+    X = preprocessing_pipeline.transform(records)
+    genres = model.predict(X).argmax(axis=1)
+    genres = label_encoder.inverse_transform(genres)
+    titles = records["title"].values
+
+    genre_dict = db.get_genre_by_names(genres)
+    response = []
+    data_to_insert = []
+    for title, genre in zip(titles, genres):
+        response.append(GenrePredictResponse(genre=genre, title=title))
+        data_to_insert.append((title, genre_dict[genre]))
+    db.insert_title(data_to_insert)
+    return response
 
 
 @g_router.get("/",
