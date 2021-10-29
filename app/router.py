@@ -5,6 +5,7 @@ from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, validator
 from app import database as db
 import joblib
+
 from utils import remove_stops, replace
 
 #########################
@@ -76,8 +77,7 @@ def predict(request_data: GenrePredictRequest):
     records = pd.concat([records, vectors], axis=1)
 
     # Preprocessing & Prediction
-    records["tags"] = records["tags"].apply(replace)
-    records["tags"] = records["tags"].apply(remove_stops)
+    records["tags"] = records["tags"].str.replace(",", "")
     X = preprocessing_pipeline.transform(records)
     genres = model.predict(X).argmax(axis=1)
     genres = label_encoder.inverse_transform(genres)
