@@ -1,12 +1,12 @@
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.7
 
-WORKDIR /app
+WORKDIR /
 
-COPY ./requirements.txt /app/requirements.txt
+COPY ./requirements.txt /requirements.txt
 
-RUN pip install -r requirements.txt
+RUN pip install -r ../requirements.txt
 
-COPY ./app /app/app
-COPY ./models /app/models
+COPY ./app /app
+COPY ./models /models
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
